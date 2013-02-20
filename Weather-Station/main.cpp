@@ -14,14 +14,8 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <Arduino.h>
-#include <SD.h>
-#include <SoftwareSerial.h>
 #include <FSK600BaudTA900TB1500Mod.h>
 #include <defs.h>
-
-
-// SD logfile path
-#define LOGFILE "data.txt"
 
 #define SENSOR_STRING_LENGTH 40
 
@@ -32,9 +26,6 @@ FSK600BaudTA900TB1500Mod fskMod(FSK_MOD_TX);
 
 // sensor data, as ASCII
 char sensorString[SENSOR_STRING_LENGTH];
-
-// log File
-File logFile;
 
 // absolute pressure sensor value
 int absValue = 0;
@@ -83,12 +74,6 @@ void initLEDs()
 /**
  * Initializes SD shield
  */
-// TODO fix comment
-int initSdShield()
-{
-	pinMode(SD_CS, OUTPUT);
-	return SD.begin(SD_CS);
-}
 
 
 /**
@@ -163,16 +148,7 @@ void quicklyMakeSomeLedBlinkSeveralTimes(int led, int times)
 	}
 }
 
-int logMessageOnSdCard(char *message)
-{
-	logFile = SD.open(LOGFILE, FILE_WRITE);
-	if (logFile)
-	{
-		logFile.println(message);
-		logFile.close();
-	}
-	return logFile;
-}
+
 
 /**
  * Arduino's setup function, called once at startup, after init
@@ -187,32 +163,6 @@ void setup()
 
 	initDebug();
 
-	// SD card init
-	Serial.print(F("SD Init..."));
-
-	if (!initSdShield())
-	{
-		Serial.println(F("KO"));
-		showStatus(0);
-	}
-	else
-	{
-		Serial.println(F("OK"));
-		showStatus(0);
-		delay(1000);
-		if (digitalRead(USER_BUTTON) == 0)
-		{
-			// delete the file:
-			Serial.println(F("SD_C"));
-			SD.remove(LOGFILE);
-			quicklyMakeSomeLedBlinkSeveralTimes(LED_ORANGE, 5);
-		}
-		Serial.println(F("R"));
-		if (logMessageOnSdCard("R"))
-			quicklyMakeSomeLedBlinkSeveralTimes(LED_GREEN, 5);
-		else
-			quicklyMakeSomeLedBlinkSeveralTimes(LED_RED, 5);
-	}
 
 	resetKiwiFrame();
 
@@ -289,31 +239,6 @@ void loop() {
 		fskMod.write(kiwiFrame[cpt]);
 	fskMod.off();
 
-	// Logging
-	logFile = SD.open(LOGFILE, FILE_WRITE);
-	if (logFile) {
-		//Serial.println(F("log file access success"));
-		digitalWrite(LED_GREEN, HIGH);
-		delay(100);
-		digitalWrite(LED_GREEN, LOW);
-		delay(100);
-		digitalWrite(LED_GREEN, HIGH);
-		delay(100);
-		digitalWrite(LED_GREEN, LOW);
-		logFile.print(sensorString);
-		logFile.close();
-	}
-	else
-	{
-		Serial.println(F("log file access failure"));
-		digitalWrite(LED_RED, HIGH);
-		delay(100);
-		digitalWrite(LED_RED, LOW);
-		delay(100);
-		digitalWrite(LED_RED, HIGH);
-		delay(100);
-		digitalWrite(LED_RED, LOW);
-	}
 		//wdt_reset();
 
 		// Sensor data processing
